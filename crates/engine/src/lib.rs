@@ -345,7 +345,7 @@ static NEXT_DOC_UID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64
 
 /// The rows open in the Layers panel: the layers, sublayers and groups that show what they hold.
 /// A document opens with the ones it was saved with ([`Document::layers_open`]), else with only
-/// its top-level layers open.
+/// its top-level layers open (a `.ai` another app wrote opens with none open).
 #[derive(Clone, Debug, Default)]
 pub struct OpenRows {
     ids: std::collections::HashSet<NodeId>,
@@ -1007,7 +1007,7 @@ impl Default for Prefs {
             font_preview_size: s("medium"),
             recent_fonts_count: 10,
             missing_glyph_protection: true,
-            highlight_alternate_glyphs: true,
+            highlight_alternate_glyphs: false,
             placeholder_text: true,
             units_general: s("points"),
             units_stroke: s("points"),
@@ -1198,6 +1198,8 @@ pub struct Session {
     pub(crate) plane_widget_press: bool,
     /// A guide being dragged out of a ruler ([`Session::ruler_guide`]).
     pub(crate) ruler_guide: Option<vectorcraft_tools::rulerguide::NewGuide>,
+    /// Which selected type overflows its frame, for the markers every tool but the Type tools shows.
+    pub(crate) overflow_marks: vectorcraft_tools::text::OverflowMarks,
     /// The last search for the files of missing fonts (`text.findFontFiles`), until another
     /// starts; dropping it stops it.
     pub(crate) font_search: Option<cmd::fontfiles::FontSearch>,
@@ -1268,6 +1270,7 @@ impl Session {
             liquify_stroke: None,
             plane_widget_press: false,
             ruler_guide: None,
+            overflow_marks: Default::default(),
             font_search: None,
             link_search: None,
             search_rules: None,

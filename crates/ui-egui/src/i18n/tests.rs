@@ -8,7 +8,7 @@ fn tags_map_to_languages() {
     assert_eq!(lang_from_tag("en_US.UTF-8"), Some(Lang::EN));
     assert_eq!(lang_from_tag("C"), Some(Lang::EN));
     assert_eq!(lang_from_tag("POSIX"), Some(Lang::EN));
-    assert_eq!(lang_from_tag("nl_NL"), None);
+    assert_eq!(lang_from_tag("qaa-QM"), None, "the private-use tag names no language");
     // German: Germany, Austria, Switzerland and the rest share the one catalog.
     for tag in ["de", "de_DE.UTF-8", "de-AT", "de_CH", "de-LU", "de_DE.UTF-8@euro"] {
         assert_eq!(lang_from_tag(tag), Some(de()), "{tag}");
@@ -67,7 +67,7 @@ fn candidates_walk_from_specific_to_general() {
 #[test]
 fn os_language_lists_are_parsed() {
     assert_eq!(first_supported("(\n    \"zh-Hant-TW\",\n    \"en-US\"\n)\n"), Some(ZH()));
-    assert_eq!(first_supported("(\n    \"nl-NL\",\n    \"en-US\"\n)\n"), Some(Lang::EN));
+    assert_eq!(first_supported("(\n    \"qaa-QM\",\n    \"en-US\"\n)\n"), Some(Lang::EN), "the private-use tag falls through to the next entry");
     assert_eq!(first_supported("(\n    \"de-DE\",\n    \"en-US\"\n)\n"), Some(de()));
     assert_eq!(first_supported("(\n    \"fr-FR\",\n    \"en-US\"\n)\n"), Lang::from_code("fr"));
     assert_eq!(first_supported("("), None);
@@ -96,6 +96,15 @@ fn current_language_is_a_frame_setting() {
     assert_eq!(current(), ZH());
     assert_eq!(t("Layers"), "圖層");
     set_current(Lang::EN);
+    assert_eq!(current(), Lang::EN);
+    assert_eq!(t("Layers"), "Layers");
+}
+
+/// Unit tests run on parallel threads, and each one draws in its own language: a language set on
+/// another thread (by a test running beside this one) leaves this thread's text in English.
+#[test]
+fn a_language_set_by_another_test_leaves_this_one_in_english() {
+    std::thread::spawn(|| set_current(ZH())).join().unwrap();
     assert_eq!(current(), Lang::EN);
     assert_eq!(t("Layers"), "Layers");
 }
@@ -197,8 +206,7 @@ fn partial_catalogs_only_translate_strings_the_ui_shows() {
 }
 
 /// The engine learns the language the UI is drawn in each frame: new type takes the Japanese
-/// defaults while it is Japanese (#432). The frames stay in English: the drawing language is
-/// process-wide, and a Japanese frame would translate the tests running beside this one.
+/// defaults while it is Japanese (#432). The frames stay in English.
 #[test]
 fn the_engine_follows_the_interface_language() {
     let mut app = crate::VectorcraftApp::new(vectorcraft_engine::Session::new(), crate::Services::default());
